@@ -1,0 +1,60 @@
+I run a business for dog grooming. 
+I need a tracking system to help me.
+
+I will run this application on mac OS. I want to write the app in javascript, as this is what I have the most experience in.
+
+The idea of the app is to have everything I need in one place. 
+
+First of all I need a database to contain all of my existing clients.
+This database should include information for:
+- ID of client (unique identifier to be used across other databases)
+- name of client
+- phone number
+- name of dog(s) (sometimes a client has more than one dog)
+- the type of dog(s) (big, medium small) (short hair, medium hair, long hair) (sometimes more than one dog per customer)
+- the address of the client, as I travel to collect the dogs
+- the normal frequency of appointments (this is sometimes blank)
+- the last appointment (to be taken from appointments database)
+- the next appointment (to be taken from appointments database)
+- a note for any extra information
+
+I also need a database for appointments. 
+This should include:
+- ID of client (taken from clients databases)
+- address (taken from clients database)
+- phone number (taken from clients database)
+- appointment date
+- appointment time
+- service type (wash, cut and wash, etc)
+- price
+- a note for any extra information
+
+I also need a database for accounts.
+This should include:
+- A sheet for each month of the year.
+- Income for each day of the month (with data taken from the appointments database).
+- expenditure for each day of the month (which can be added manually in the UI)
+
+I will also need a UI to easily access the information in these databases.
+
+My plan is to have an overall homepage that displays the appointments I have for the upcoming week. From here I should be able to navigate to the other pages I need.
+
+I also need:
+A page to view and edit information in the clients database.
+- I should be able to search for a phone number or name to view if the client exists, and to view the rest of their information. 
+- After searching and displaying their information, I should be able to edit the users information, which then updates the database.
+- If I get a new client I want to be able to add them to the database easily on a new page.
+
+A more in depth page about appointments:
+- Here I should be able to view upcoming and past appointments.
+- I should be able to see which customers will be 'overdue' for an appointment next week.
+- I want to see suggested customers to call (people that haven't had an appointment for a long time)
+- Should include a link to a page to add appointments, which should collect everything I need for a new appointment and add it to the database.
+- I want to be able to edit or delete appointments, to change the time or date for example.
+
+A page to view financials (with data taken from the accounts database).
+- Here I want a summary of how much income I have made in the past week or month or year. I want to be able to see trends. For example the average price for an appointment, the average price for a particular service like bath or cut. 
+- I want to be able to see accounts in detail. with income and expenditure for each day, week or month. 
+- I want to be able to add expenditure, for example if I buy something for my business. this information should be added to the accounts database.
+
+The UI should be very basic at first, as I only want to test the functionality of things and add styling later.
