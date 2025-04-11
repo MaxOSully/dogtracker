@@ -5,6 +5,8 @@ import {
   expenditures, Expenditure, InsertExpenditure,
   ClientWithDogs, AppointmentWithClientAndDogs
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, gte, lte, like, desc, asc, SQL, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Client operations
@@ -46,48 +48,14 @@ export interface IStorage {
   }>;
 }
 
-export class MemStorage implements IStorage {
-  private clientsData: Map<number, Client>;
-  private dogsData: Map<number, Dog>;
-  private appointmentsData: Map<number, Appointment>;
-  private expendituresData: Map<number, Expenditure>;
-  private clientIdCounter: number;
-  private dogIdCounter: number;
-  private appointmentIdCounter: number;
-  private expenditureIdCounter: number;
-
-  constructor() {
-    this.clientsData = new Map();
-    this.dogsData = new Map();
-    this.appointmentsData = new Map();
-    this.expendituresData = new Map();
-    this.clientIdCounter = 1;
-    this.dogIdCounter = 1;
-    this.appointmentIdCounter = 1;
-    this.expenditureIdCounter = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   // Helper methods
-  private getNextClientId(): number {
-    return this.clientIdCounter++;
-  }
-
-  private getNextDogId(): number {
-    return this.dogIdCounter++;
-  }
-
-  private getNextAppointmentId(): number {
-    return this.appointmentIdCounter++;
-  }
-
-  private getNextExpenditureId(): number {
-    return this.expenditureIdCounter++;
-  }
-
   private async enrichClientWithDogsAndAppointments(client: Client): Promise<ClientWithDogs> {
     const dogs = await this.getDogsByClientId(client.id);
-    const clientAppointments = Array.from(this.appointmentsData.values())
-      .filter(appointment => appointment.clientId === client.id);
+    
+    // Get client's appointments
+    const clientAppointments = await db.select().from(appointments)
+      .where(eq(appointments.clientId, client.id));
     
     // Sort appointments by date
     const sortedAppointments = [...clientAppointments].sort((a, b) => {
@@ -140,28 +108,27 @@ export class MemStorage implements IStorage {
 
   // Client operations
   async getClients(): Promise<ClientWithDogs[]> {
-    const clients = Array.from(this.clientsData.values());
+    const clientsList = await db.select().from(clients);
     const enrichedClients = await Promise.all(
-      clients.map(client => this.enrichClientWithDogsAndAppointments(client))
+      clientsList.map(client => this.enrichClientWithDogsAndAppointments(client))
     );
     return enrichedClients;
   }
 
   async getClient(id: number): Promise<ClientWithDogs | undefined> {
-    const client = this.clientsData.get(id);
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
     if (!client) return undefined;
     
     return this.enrichClientWithDogsAndAppointments(client);
   }
 
   async searchClients(term: string): Promise<ClientWithDogs[]> {
-    const normalizedTerm = term.toLowerCase();
-    const matchingClients = Array.from(this.clientsData.values()).filter(client => {
-      return (
-        client.name.toLowerCase().includes(normalizedTerm) ||
-        client.phone.includes(normalizedTerm)
+    const searchTerm = `%${term}%`;
+    const matchingClients = await db.select()
+      .from(clients)
+      .where(
+        sql`${clients.name} ILIKE ${searchTerm} OR ${clients.phone} ILIKE ${searchTerm}`
       );
-    });
     
     const enrichedClients = await Promise.all(
       matchingClients.map(client => this.enrichClientWithDogsAndAppointments(client))
@@ -171,75 +138,84 @@ export class MemStorage implements IStorage {
   }
 
   async createClient(client: InsertClient, dogsInfo: InsertDog[]): Promise<ClientWithDogs> {
-    const id = this.getNextClientId();
-    const newClient: Client = { id, ...client };
-    this.clientsData.set(id, newClient);
+    // Insert client and get the new client with ID
+    const [newClient] = await db.insert(clients).values(client).returning();
     
     // Create dogs for this client
-    await Promise.all(dogsInfo.map(dogInfo => 
-      this.createDog({ ...dogInfo, clientId: id })
-    ));
+    if (dogsInfo.length > 0) {
+      await Promise.all(dogsInfo.map(dogInfo => 
+        this.createDog({ ...dogInfo, clientId: newClient.id })
+      ));
+    }
     
     return this.enrichClientWithDogsAndAppointments(newClient);
   }
 
   async updateClient(id: number, clientUpdate: Partial<InsertClient>): Promise<ClientWithDogs | undefined> {
-    const existingClient = this.clientsData.get(id);
-    if (!existingClient) return undefined;
+    // Ensure null values instead of undefined for optional fields
+    const safeUpdate = { 
+      ...clientUpdate,
+      frequency: clientUpdate.frequency ?? null,
+      notes: clientUpdate.notes ?? null 
+    };
     
-    const updatedClient = { ...existingClient, ...clientUpdate };
-    this.clientsData.set(id, updatedClient);
+    const [updatedClient] = await db.update(clients)
+      .set(safeUpdate)
+      .where(eq(clients.id, id))
+      .returning();
+    
+    if (!updatedClient) return undefined;
     
     return this.enrichClientWithDogsAndAppointments(updatedClient);
   }
 
   // Dog operations
   async getDogsByClientId(clientId: number): Promise<Dog[]> {
-    return Array.from(this.dogsData.values())
-      .filter(dog => dog.clientId === clientId);
+    return db.select().from(dogs).where(eq(dogs.clientId, clientId));
   }
 
   async createDog(dog: InsertDog): Promise<Dog> {
-    const id = this.getNextDogId();
-    const newDog: Dog = { id, ...dog };
-    this.dogsData.set(id, newDog);
+    const [newDog] = await db.insert(dogs).values(dog).returning();
     return newDog;
   }
 
   async updateDog(id: number, dogUpdate: Partial<InsertDog>): Promise<Dog | undefined> {
-    const existingDog = this.dogsData.get(id);
-    if (!existingDog) return undefined;
-    
-    const updatedDog = { ...existingDog, ...dogUpdate };
-    this.dogsData.set(id, updatedDog);
+    const [updatedDog] = await db.update(dogs)
+      .set(dogUpdate)
+      .where(eq(dogs.id, id))
+      .returning();
     
     return updatedDog;
   }
 
   async deleteDog(id: number): Promise<boolean> {
-    if (!this.dogsData.has(id)) return false;
-    return this.dogsData.delete(id);
+    const result = await db.delete(dogs).where(eq(dogs.id, id));
+    return true; // In PostgreSQL, delete succeeds even if no rows were deleted
   }
 
   // Appointment operations
   async getAppointments(): Promise<AppointmentWithClientAndDogs[]> {
-    const appointments = Array.from(this.appointmentsData.values());
+    const appointmentsList = await db.select().from(appointments);
     const enrichedAppointments = await Promise.all(
-      appointments.map(appointment => this.enrichAppointmentWithClientAndDogs(appointment))
+      appointmentsList.map(appointment => this.enrichAppointmentWithClientAndDogs(appointment))
     );
     return enrichedAppointments;
   }
 
   async getAppointment(id: number): Promise<AppointmentWithClientAndDogs | undefined> {
-    const appointment = this.appointmentsData.get(id);
+    const [appointment] = await db.select()
+      .from(appointments)
+      .where(eq(appointments.id, id));
+    
     if (!appointment) return undefined;
     
     return this.enrichAppointmentWithClientAndDogs(appointment);
   }
 
   async getAppointmentsByClientId(clientId: number): Promise<AppointmentWithClientAndDogs[]> {
-    const clientAppointments = Array.from(this.appointmentsData.values())
-      .filter(appointment => appointment.clientId === clientId);
+    const clientAppointments = await db.select()
+      .from(appointments)
+      .where(eq(appointments.clientId, clientId));
     
     const enrichedAppointments = await Promise.all(
       clientAppointments.map(appointment => this.enrichAppointmentWithClientAndDogs(appointment))
@@ -249,81 +225,84 @@ export class MemStorage implements IStorage {
   }
 
   async getAppointmentsByDateRange(startDate: Date, endDate: Date): Promise<AppointmentWithClientAndDogs[]> {
-    const appointments = Array.from(this.appointmentsData.values())
-      .filter(appointment => {
-        const appointmentDate = new Date(appointment.date);
-        return appointmentDate >= startDate && appointmentDate <= endDate;
-      });
+    // Convert dates to string format for PostgreSQL
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    const appointmentsInRange = await db.select()
+      .from(appointments)
+      .where(
+        sql`${appointments.date} >= ${startDateStr} AND ${appointments.date} <= ${endDateStr}`
+      );
     
     const enrichedAppointments = await Promise.all(
-      appointments.map(appointment => this.enrichAppointmentWithClientAndDogs(appointment))
+      appointmentsInRange.map(appointment => this.enrichAppointmentWithClientAndDogs(appointment))
     );
     
     return enrichedAppointments;
   }
 
   async createAppointment(appointment: InsertAppointment): Promise<AppointmentWithClientAndDogs> {
-    const id = this.getNextAppointmentId();
-    const createdAt = new Date();
-    const newAppointment: Appointment = { 
-      id, 
-      ...appointment,
-      createdAt 
-    };
-    
-    this.appointmentsData.set(id, newAppointment);
+    const [newAppointment] = await db.insert(appointments)
+      .values(appointment)
+      .returning();
     
     return this.enrichAppointmentWithClientAndDogs(newAppointment);
   }
 
   async updateAppointment(id: number, appointmentUpdate: Partial<InsertAppointment>): Promise<AppointmentWithClientAndDogs | undefined> {
-    const existingAppointment = this.appointmentsData.get(id);
-    if (!existingAppointment) return undefined;
+    const [updatedAppointment] = await db.update(appointments)
+      .set(appointmentUpdate)
+      .where(eq(appointments.id, id))
+      .returning();
     
-    const updatedAppointment = { ...existingAppointment, ...appointmentUpdate };
-    this.appointmentsData.set(id, updatedAppointment);
+    if (!updatedAppointment) return undefined;
     
     return this.enrichAppointmentWithClientAndDogs(updatedAppointment);
   }
 
   async deleteAppointment(id: number): Promise<boolean> {
-    if (!this.appointmentsData.has(id)) return false;
-    return this.appointmentsData.delete(id);
+    await db.delete(appointments).where(eq(appointments.id, id));
+    return true;
   }
 
   // Financials operations
   async getExpenditures(): Promise<Expenditure[]> {
-    return Array.from(this.expendituresData.values());
+    return db.select().from(expenditures);
   }
 
   async getExpendituresByDateRange(startDate: Date, endDate: Date): Promise<Expenditure[]> {
-    return Array.from(this.expendituresData.values())
-      .filter(expenditure => {
-        const expenditureDate = new Date(expenditure.date);
-        return expenditureDate >= startDate && expenditureDate <= endDate;
-      });
+    // Convert dates to string format for PostgreSQL
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    return db.select()
+      .from(expenditures)
+      .where(
+        sql`${expenditures.date} >= ${startDateStr} AND ${expenditures.date} <= ${endDateStr}`
+      );
   }
 
   async createExpenditure(expenditure: InsertExpenditure): Promise<Expenditure> {
-    const id = this.getNextExpenditureId();
-    const newExpenditure: Expenditure = { id, ...expenditure };
-    this.expendituresData.set(id, newExpenditure);
+    const [newExpenditure] = await db.insert(expenditures)
+      .values(expenditure)
+      .returning();
+    
     return newExpenditure;
   }
 
   async updateExpenditure(id: number, expenditureUpdate: Partial<InsertExpenditure>): Promise<Expenditure | undefined> {
-    const existingExpenditure = this.expendituresData.get(id);
-    if (!existingExpenditure) return undefined;
-    
-    const updatedExpenditure = { ...existingExpenditure, ...expenditureUpdate };
-    this.expendituresData.set(id, updatedExpenditure);
+    const [updatedExpenditure] = await db.update(expenditures)
+      .set(expenditureUpdate)
+      .where(eq(expenditures.id, id))
+      .returning();
     
     return updatedExpenditure;
   }
 
   async deleteExpenditure(id: number): Promise<boolean> {
-    if (!this.expendituresData.has(id)) return false;
-    return this.expendituresData.delete(id);
+    await db.delete(expenditures).where(eq(expenditures.id, id));
+    return true;
   }
 
   // Summary operations
@@ -368,15 +347,29 @@ export class MemStorage implements IStorage {
     expenses: number;
     net: number;
   }> {
+    // Convert dates to string format for PostgreSQL
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
     // Get income from appointments
-    const appointments = await this.getAppointmentsByDateRange(startDate, endDate);
-    const income = appointments.reduce((total, appointment) => {
+    const appointmentsInRange = await db.select()
+      .from(appointments)
+      .where(
+        sql`${appointments.date} >= ${startDateStr} AND ${appointments.date} <= ${endDateStr}`
+      );
+    
+    const income = appointmentsInRange.reduce((total, appointment) => {
       return total + Number(appointment.price);
     }, 0);
     
     // Get expenses
-    const expenditures = await this.getExpendituresByDateRange(startDate, endDate);
-    const expenses = expenditures.reduce((total, expenditure) => {
+    const expendituresInRange = await db.select()
+      .from(expenditures)
+      .where(
+        sql`${expenditures.date} >= ${startDateStr} AND ${expenditures.date} <= ${endDateStr}`
+      );
+    
+    const expenses = expendituresInRange.reduce((total, expenditure) => {
       return total + Number(expenditure.amount);
     }, 0);
     
@@ -388,4 +381,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

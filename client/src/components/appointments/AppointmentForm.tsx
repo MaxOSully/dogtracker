@@ -92,9 +92,10 @@ const AppointmentForm = ({
 
   const handleFormSubmit = (data: AppointmentFormValues) => {
     // Transform the form data to match the InsertAppointment type
+    // For PostgreSQL, we need to format the date as YYYY-MM-DD
     const appointmentData: InsertAppointment = {
       clientId: parseInt(data.clientId),
-      date: new Date(data.date),
+      date: data.date, // Keep as string format YYYY-MM-DD
       time: data.time,
       serviceType: data.serviceType,
       price: data.price, // Keep price as string to match the schema expectations
