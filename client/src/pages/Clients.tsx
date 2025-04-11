@@ -11,9 +11,11 @@ const Clients = () => {
   const [isSearching, setIsSearching] = useState(false);
 
   // Fetch all clients if not searching
-  const { data: allClients, isLoading: isLoadingAll } = useQuery<ClientWithDogs[]>({
+  const { data: allClients, isLoading: isLoadingAll, refetch: refetchClients } = useQuery<ClientWithDogs[]>({
     queryKey: ['/api/clients'],
     enabled: !isSearching,
+    refetchOnMount: true,
+    staleTime: 0, // Always consider data stale to ensure fresh data
   });
 
   // Fetch search results if searching
@@ -25,6 +27,9 @@ const Clients = () => {
   const handleSearch = (term: string) => {
     setSearchTerm(term);
     setIsSearching(term.length > 0);
+    if (!term) {
+      refetchClients(); // Force refetch when returning to all clients
+    }
   };
 
   const clients = isSearching ? searchResults : allClients;

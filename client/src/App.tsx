@@ -4,6 +4,7 @@ import Dashboard from "@/pages/Dashboard";
 import Clients from "@/pages/Clients";
 import AddClient from "@/pages/AddClient";
 import EditClient from "@/pages/EditClient";
+import ClientDetails from "@/pages/ClientDetails";
 import Appointments from "@/pages/Appointments";
 import AddAppointment from "@/pages/AddAppointment";
 import EditAppointment from "@/pages/EditAppointment";
@@ -19,6 +20,7 @@ function App() {
         <Route path="/clients" component={Clients} />
         <Route path="/clients/add" component={AddClient} />
         <Route path="/clients/edit/:id" component={EditClient} />
+        <Route path="/clients/:id" component={ClientDetails} />
         <Route path="/appointments" component={Appointments} />
         <Route path="/appointments/add" component={AddAppointment} />
         <Route path="/appointments/edit/:id" component={EditAppointment} />
