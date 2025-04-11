@@ -20,7 +20,14 @@ const Appointments = () => {
 
   // Fetch appointments based on the filter
   const { data: appointments, isLoading } = useQuery<AppointmentWithClientAndDogs[]>({
-    queryKey: [`/api/appointments/dateRange?startDate=${format(filter.dateRange.startDate, 'yyyy-MM-dd')}&endDate=${format(filter.dateRange.endDate, 'yyyy-MM-dd')}`],
+    queryKey: ['/api/appointments/dateRange', format(filter.dateRange.startDate, 'yyyy-MM-dd'), format(filter.dateRange.endDate, 'yyyy-MM-dd')],
+    queryFn: async ({ queryKey }) => {
+      const [_, startDate, endDate] = queryKey;
+      return fetch(`/api/appointments/dateRange?startDate=${startDate}&endDate=${endDate}`).then(res => {
+        if (!res.ok) throw new Error('Failed to fetch appointments');
+        return res.json();
+      });
+    }
   });
 
   // Fetch overdue clients

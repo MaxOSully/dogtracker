@@ -58,9 +58,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate dogs data
       const dogsSchema = z.array(insertDogSchema.omit({ clientId: true }));
-      const dogsData = dogsSchema.parse(req.body.dogs);
+      const parsedDogs = dogsSchema.parse(req.body.dogs);
       
-      const client = await storage.createClient(clientData, dogsData);
+      // At this point, we don't have the client ID yet, so we pass the dogs as is
+      // The createClient method will set the proper clientId for each dog
+      const client = await storage.createClient(clientData, parsedDogs as InsertDog[]);
       res.status(201).json(client);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -80,6 +82,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate client data
       const clientData = insertClientSchema.partial().parse(req.body);
       
+      // Handle updated dogs if present in the request
+      if (req.body.dogs !== undefined) {
+        // Get existing dogs for this client
+        const existingDogs = await storage.getDogsByClientId(id);
+        const existingDogIds = new Set(existingDogs.map(dog => dog.id));
+        
+        // Parse dogs from request
+        const dogsSchema = z.array(z.object({
+          id: z.number().optional(), // Optional for new dogs
+          name: z.string(),
+          size: z.string(),
+          hairLength: z.string()
+        }));
+        
+        const dogsData = dogsSchema.parse(req.body.dogs);
+        
+        // Process each dog: create new ones, update existing ones
+        for (const dogData of dogsData) {
+          if (dogData.id) {
+            // Update existing dog
+            await storage.updateDog(dogData.id, {
+              name: dogData.name,
+              size: dogData.size,
+              hairLength: dogData.hairLength
+            });
+            
+            // Remove from existingDogIds set to track which dogs to keep
+            existingDogIds.delete(dogData.id);
+          } else {
+            // Create new dog
+            await storage.createDog({
+              clientId: id,
+              name: dogData.name,
+              size: dogData.size,
+              hairLength: dogData.hairLength
+            });
+          }
+        }
+        
+        // Delete dogs that are no longer in the request
+        Array.from(existingDogIds).forEach(async (dogIdToDelete) => {
+          await storage.deleteDog(dogIdToDelete);
+        });
+      }
+      
+      // Update the client information
       const client = await storage.updateClient(id, clientData);
       if (!client) {
         return res.status(404).json({ message: "Client not found" });

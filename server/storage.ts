@@ -143,8 +143,14 @@ export class DatabaseStorage implements IStorage {
     
     // Create dogs for this client
     if (dogsInfo.length > 0) {
-      await Promise.all(dogsInfo.map(dogInfo => 
-        this.createDog({ ...dogInfo, clientId: newClient.id })
+      // Update the clientId for each dog to match the new client
+      const dogsWithClientId = dogsInfo.map(dogInfo => ({
+        ...dogInfo,
+        clientId: newClient.id
+      }));
+      
+      await Promise.all(dogsWithClientId.map(dogInfo => 
+        this.createDog(dogInfo)
       ));
     }
     
