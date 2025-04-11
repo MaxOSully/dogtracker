@@ -97,7 +97,7 @@ const AppointmentForm = ({
       date: new Date(data.date),
       time: data.time,
       serviceType: data.serviceType,
-      price: parseFloat(data.price),
+      price: data.price, // Keep price as string to match the schema expectations
       status: data.status,
       notes: data.notes,
     };
