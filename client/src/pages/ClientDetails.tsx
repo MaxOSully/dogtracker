@@ -111,8 +111,8 @@ const ClientDetails = () => {
                     <div className="text-gray-500">Phone:</div>
                     <div>{formatPhoneNumber(client.phone)}</div>
                     
-                    <div className="text-gray-500">Email:</div>
-                    <div>{client.email || "Not provided"}</div>
+                    <div className="text-gray-500">Frequency:</div>
+                    <div>{client.frequency || "Not specified"}</div>
                   </div>
                 </div>
                 
@@ -183,7 +183,7 @@ const ClientDetails = () => {
                           </TableCell>
                           <TableCell>{appointment.time}</TableCell>
                           <TableCell>{appointment.serviceType}</TableCell>
-                          <TableCell>${appointment.price.toFixed(2)}</TableCell>
+                          <TableCell>${Number(appointment.price).toFixed(2)}</TableCell>
                           <TableCell>
                             <Badge 
                               variant={
