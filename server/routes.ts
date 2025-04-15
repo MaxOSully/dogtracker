@@ -6,7 +6,8 @@ import {
   insertClientSchema,
   insertDogSchema,
   insertAppointmentSchema,
-  insertExpenditureSchema
+  insertExpenditureSchema,
+  InsertDog
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -122,9 +123,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Delete dogs that are no longer in the request
-        Array.from(existingDogIds).forEach(async (dogIdToDelete) => {
-          await storage.deleteDog(dogIdToDelete);
-        });
+        // Fixed: Using forEach with async functions doesn't properly wait for completion
+        // We need to use Promise.all to ensure all dogs are deleted before continuing
+        await Promise.all(
+          Array.from(existingDogIds).map(dogIdToDelete => 
+            storage.deleteDog(dogIdToDelete)
+          )
+        );
       }
       
       // Update the client information

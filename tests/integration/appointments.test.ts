@@ -10,7 +10,7 @@ import { format, addDays } from 'date-fns';
 describe('Appointment API', () => {
   let app: Express;
   let server: Server;
-  let request: SuperTest<Test>;
+  let request: any;
   let testData: any;
 
   // Set up test server and database

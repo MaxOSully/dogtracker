@@ -9,7 +9,7 @@ import { InsertClient, InsertDog, Client, Dog } from '../../shared/schema';
 describe('Client API', () => {
   let app: Express;
   let server: Server;
-  let request: SuperTest<Test>;
+  let request: any;
   let testData: any;
 
   // Set up test server and database
