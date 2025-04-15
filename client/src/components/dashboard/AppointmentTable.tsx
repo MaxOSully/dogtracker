@@ -31,9 +31,12 @@ const AppointmentTable = ({ appointments }: AppointmentTableProps) => {
     try {
       await apiRequest('DELETE', `/api/appointments/${id}`);
       
-      // Invalidate queries that might contain this appointment
-      queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/appointments/dateRange'] });
+      // Invalidate all appointment-related queries
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/appointments'],
+        exact: false,
+        refetchType: 'all'
+      });
       
       toast({
         title: "Appointment cancelled",
