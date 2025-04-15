@@ -30,9 +30,9 @@ async function seedTestData() {
       .values({
         name: 'Test Client',
         phone: '123-456-7890',
-        email: 'test@example.com',
         address: '123 Test St',
-        frequency: 'Monthly'
+        frequency: 'Monthly',
+        notes: 'Test client notes'
       })
       .returning();
     

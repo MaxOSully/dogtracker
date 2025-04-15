@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import { Server } from 'http';
-import supertest from 'supertest';
+import supertest, { SuperTest, Test } from 'supertest';
 import { registerRoutes } from '../../server/routes';
 
 // Create a test server setup to use in tests

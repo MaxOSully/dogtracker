@@ -1,5 +1,5 @@
 import { describe, beforeAll, afterAll, beforeEach, it, expect } from '@jest/globals';
-import { SuperTest, Test } from 'supertest';
+import supertest from 'supertest';
 import { Express } from 'express';
 import { Server } from 'http';
 import { createTestServer } from '../utils/test-server';
@@ -63,9 +63,9 @@ describe('Client API', () => {
       client: {
         name: 'New Test Client',
         phone: '987-654-3210',
-        email: 'newtest@example.com',
         address: '456 New St',
-        frequency: 'Biweekly'
+        frequency: 'Biweekly',
+        notes: 'Notes for new test client'
       },
       dogs: [
         {
