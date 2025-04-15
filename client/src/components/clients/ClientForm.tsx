@@ -40,7 +40,7 @@ const ClientForm = ({
     frequency: "",
     notes: "",
   },
-  defaultDogs = [{ name: "", size: "Medium", hairLength: "Medium" }],
+  defaultDogs = [{ id: undefined, name: "", size: "Medium", hairLength: "Medium" }],
   onSubmit,
   isSubmitting,
 }: ClientFormProps) => {

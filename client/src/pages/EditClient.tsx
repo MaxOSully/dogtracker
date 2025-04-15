@@ -24,14 +24,16 @@ const EditClient = () => {
     
     setIsSubmitting(true);
     try {
-      // Update client data
-      await apiRequest('PUT', `/api/clients/${id}`, clientData);
-      
-      // Handle dogs - this is simplified, in a real app you'd handle updating existing dogs
-      // and creating new ones separately
-      
-      // In this example, we'll just update by deleting and re-creating
-      // NOTE: This is not ideal in a production app, but works for our demo
+      // Send both client and dogs data in a single update request
+      await apiRequest('PUT', `/api/clients/${id}`, {
+        ...clientData,
+        dogs: dogsData.map(dog => ({
+          id: dog.id, // This will be undefined for new dogs
+          name: dog.name,
+          size: dog.size,
+          hairLength: dog.hairLength
+        }))
+      });
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
