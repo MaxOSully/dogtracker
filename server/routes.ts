@@ -91,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Parse dogs from request
         const dogsSchema = z.array(z.object({
-          id: z.number().optional(), // Optional for new dogs
+          id: z.number().optional(),
           name: z.string(),
           size: z.string(),
           hairLength: z.string()
@@ -99,37 +99,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const dogsData = dogsSchema.parse(req.body.dogs);
 
-        // Process each dog: create new ones, update existing ones
-        for (const dogData of dogsData) {
-          if (dogData.id) {
-            // Update existing dog
-            await storage.updateDog(dogData.id, {
-              name: dogData.name,
-              size: dogData.size,
-              hairLength: dogData.hairLength
-            });
-
-            // Remove from existingDogIds set to track which dogs to keep
-            existingDogIds.delete(dogData.id);
-          } else {
-            // Create new dog
-            await storage.createDog({
-              clientId: id,
-              name: dogData.name,
-              size: dogData.size,
-              hairLength: dogData.hairLength
-            });
-          }
-        }
-
-        // Delete dogs that are no longer in the request
-        // Fixed: Using forEach with async functions doesn't properly wait for completion
-        // We need to use Promise.all to ensure all dogs are deleted before continuing
-        await Promise.all(
-          Array.from(existingDogIds).map(dogIdToDelete => 
-            storage.deleteDog(dogIdToDelete)
+        // Process all dog operations concurrently
+        await Promise.all([
+          // Update and create dogs
+          ...dogsData.map(async (dogData) => {
+            if (dogData.id) {
+              // Update existing dog
+              await storage.updateDog(dogData.id, {
+                name: dogData.name,
+                size: dogData.size,
+                hairLength: dogData.hairLength
+              });
+              existingDogIds.delete(dogData.id);
+            } else {
+              // Create new dog
+              await storage.createDog({
+                clientId: id,
+                name: dogData.name,
+                size: dogData.size,
+                hairLength: dogData.hairLength
+              });
+            }
+          }),
+          // Delete removed dogs
+          ...Array.from(existingDogIds).map(dogId => 
+            storage.deleteDog(dogId)
           )
-        );
+        ]);
       }
 
       // Update the client information
