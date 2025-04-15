@@ -99,33 +99,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const dogsData = dogsSchema.parse(req.body.dogs);
 
-        // Process all dog operations concurrently
-        await Promise.all([
-          // Update and create dogs
-          ...dogsData.map(async (dogData) => {
-            if (dogData.id) {
-              // Update existing dog
-              await storage.updateDog(dogData.id, {
-                name: dogData.name,
-                size: dogData.size,
-                hairLength: dogData.hairLength
-              });
-              existingDogIds.delete(dogData.id);
-            } else {
-              // Create new dog
-              await storage.createDog({
-                clientId: id,
-                name: dogData.name,
-                size: dogData.size,
-                hairLength: dogData.hairLength
-              });
-            }
-          }),
-          // Delete removed dogs
-          ...Array.from(existingDogIds).map(dogId => 
-            storage.deleteDog(dogId)
-          )
-        ]);
+        // First handle updates and additions
+        await Promise.all(dogsData.map(async (dogData) => {
+          if (dogData.id) {
+            // Update existing dog
+            await storage.updateDog(dogData.id, {
+              name: dogData.name,
+              size: dogData.size,
+              hairLength: dogData.hairLength
+            });
+            existingDogIds.delete(dogData.id); // Remove from deletion set
+          } else {
+            // Create new dog
+            await storage.createDog({
+              clientId: id,
+              name: dogData.name,
+              size: dogData.size,
+              hairLength: dogData.hairLength
+            });
+          }
+        }));
+
+        // Then handle deletions only if explicitly removed
+        if (existingDogIds.size > 0) {
+          await Promise.all(
+            Array.from(existingDogIds).map(dogId => storage.deleteDog(dogId))
+          );
+        }
       }
 
       // Update the client information
