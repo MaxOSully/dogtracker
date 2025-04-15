@@ -191,7 +191,7 @@ const AppointmentsTable = ({
                   {format(parseISO(appointment.date.toString()), "MMM d, yyyy")}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {format(parseISO(`2000-01-01T${appointment.time}`), "h:mm a")}
+                  {format(parseISO(`2000-01-01T${appointment.time.split(':').slice(0,2).join(':')}`), 'h:mm a')}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {appointment.client.name}
