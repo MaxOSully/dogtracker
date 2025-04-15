@@ -33,12 +33,10 @@ const EditAppointment = () => {
     try {
       await apiRequest('PUT', `/api/appointments/${id}`, appointmentData);
       
-      // Invalidate all related queries to refresh data
+      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
       queryClient.invalidateQueries({ queryKey: [`/api/appointments/${id}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/appointments/dateRange'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/summary/financials'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/summary/overdue-clients'] });
       
       toast({
         title: "Success!",
