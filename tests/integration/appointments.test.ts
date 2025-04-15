@@ -64,7 +64,7 @@ describe('Appointment API', () => {
     const newAppointment: InsertAppointment = {
       clientId: testData.client.id,
       date: format(tomorrow, 'yyyy-MM-dd'),
-      time: '15:30',
+      time: '15:30:00',
       serviceType: 'Bath Only',
       price: '35.00',
       status: 'Scheduled',
@@ -161,7 +161,7 @@ describe('Appointment API', () => {
   it('should update an appointment', async () => {
     const appointmentId = testData.appointment.id;
     const updates = {
-      time: '16:45',
+      time: '16:45:00',
       serviceType: 'Premium Groom',
       price: '65.00'
     };
