@@ -17,7 +17,7 @@ async function cleanupDatabase() {
     await pool.query('ALTER SEQUENCE appointments_id_seq RESTART WITH 1');
     await pool.query('ALTER SEQUENCE expenditures_id_seq RESTART WITH 1');
   } catch (error) {
-    console.error('Error cleaning database:', error);
+    console.error('Error cleaning database:', error?.message || error);
     throw error;
   }
 }
@@ -85,7 +85,7 @@ async function seedTestData() {
       expenditure: testExpenditure
     };
   } catch (error) {
-    console.error('Error seeding test data:', error);
+    console.error('Error seeding test data:', error?.message || error);
     throw error;
   }
 }

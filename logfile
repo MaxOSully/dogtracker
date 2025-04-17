@@ -1,0 +1,8 @@
+2025-04-15 14:35:51.470 CST [21490] LOG:  starting PostgreSQL 14.12 (Homebrew) on x86_64-apple-darwin22.6.0, compiled by Apple clang version 15.0.0 (clang-1500.1.0.2.5), 64-bit
+2025-04-15 14:35:51.473 CST [21490] LOG:  listening on IPv6 address "::1", port 5432
+2025-04-15 14:35:51.473 CST [21490] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2025-04-15 14:35:51.474 CST [21490] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2025-04-15 14:35:51.484 CST [21491] LOG:  database system was shut down at 2025-04-15 14:35:02 CST
+2025-04-15 14:35:51.491 CST [21490] LOG:  database system is ready to accept connections
+2025-04-15 20:39:10.429 CST [38242] ERROR:  permission denied for table clients
+2025-04-15 20:39:10.429 CST [38242] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" limit $1
