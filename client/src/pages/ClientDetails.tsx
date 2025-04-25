@@ -9,6 +9,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPhoneNumber } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -22,6 +34,8 @@ const ClientDetails = () => {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("info");
+  const { toast } = useToast();
+  const [appointmentToDelete, setAppointmentToDelete] = useState<number | null>(null);
   
   // Fetch client data
   const { data: client, isLoading, error } = useQuery<ClientWithDogs>({
@@ -29,10 +43,34 @@ const ClientDetails = () => {
   });
   
   // Fetch client appointments
-  const { data: appointments } = useQuery<AppointmentWithClientAndDogs[]>({
-    queryKey: [`/api/appointments?clientId=${id}`],
+  const { data: appointments, refetch: refetchAppointments } = useQuery<AppointmentWithClientAndDogs[]>({
+    queryKey: [`/api/appointments/dateRange?clientId=${id}&startDate=2000-01-01&endDate=2100-12-31`],
     enabled: !!client,
   });
+
+  const handleDeleteAppointment = async () => {
+    if (!appointmentToDelete) return;
+    
+    try {
+      await apiRequest('DELETE', `/api/appointments/${appointmentToDelete}`);
+      
+      // Refetch appointments
+      await refetchAppointments();
+      
+      toast({
+        title: "Success",
+        description: "Appointment has been deleted.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete appointment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAppointmentToDelete(null);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -112,7 +150,7 @@ const ClientDetails = () => {
                     <div>{formatPhoneNumber(client.phone)}</div>
                     
                     <div className="text-gray-500">Frequency:</div>
-                    <div>{client.frequency || "Not specified"}</div>
+                    <div>{client.frequency ? `${client.frequency} days` : "Not specified"}</div>
                   </div>
                 </div>
                 
@@ -139,6 +177,9 @@ const ClientDetails = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-2">
+                    <div className="text-gray-500">Breed:</div>
+                    <div>{dog.breed}</div>
+
                     <div className="text-gray-500">Size:</div>
                     <div>{dog.size}</div>
                     
@@ -186,19 +227,24 @@ const ClientDetails = () => {
                           <TableCell>${Number(appointment.price).toFixed(2)}</TableCell>
                           <TableCell>
                             <Badge 
-                              variant={
-                                appointment.status === 'completed' ? 'default' : 
-                                appointment.status === 'cancelled' ? 'destructive' : 
-                                'outline'
-                              }
+                              variant={appointment.status === 'completed' ? 'default' : 'outline'}
                             >
                               {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Link href={`/appointments/edit/${appointment.id}`}>
-                              <Button variant="outline" size="sm">View</Button>
-                            </Link>
+                            <div className="flex gap-2">
+                              <Link href={`/appointments/edit/${appointment.id}`}>
+                                <Button variant="outline" size="sm">View</Button>
+                              </Link>
+                              <Button 
+                                variant="destructive" 
+                                size="sm"
+                                onClick={() => setAppointmentToDelete(appointment.id)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -212,6 +258,23 @@ const ClientDetails = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={!!appointmentToDelete} onOpenChange={() => setAppointmentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the appointment. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAppointment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 };

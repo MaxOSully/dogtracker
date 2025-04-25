@@ -9,12 +9,23 @@ import AppointmentForm from "@/components/appointments/AppointmentForm";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { AppointmentWithClientAndDogs, ClientWithDogs, InsertAppointment } from "@/types";
 import { format, parseISO } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const EditAppointment = () => {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Fetch the appointment data
   const { data: appointment, isLoading: isLoadingAppointment, error: appointmentError } = useQuery<AppointmentWithClientAndDogs>({
@@ -53,6 +64,32 @@ const EditAppointment = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await apiRequest('DELETE', `/api/appointments/${id}`);
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/appointments/dateRange'] });
+      
+      toast({
+        title: "Success",
+        description: "Appointment has been deleted successfully.",
+      });
+      
+      // Redirect to appointments list
+      navigate('/appointments');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete appointment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteDialog(false);
     }
   };
 
@@ -103,6 +140,12 @@ const EditAppointment = () => {
         <h2 className="text-2xl font-semibold text-gray-800">
           Edit Appointment for {appointment.client.name}
         </h2>
+        <Button 
+          variant="destructive"
+          onClick={() => setShowDeleteDialog(true)}
+        >
+          Delete Appointment
+        </Button>
       </div>
 
       <Card>
@@ -123,6 +166,23 @@ const EditAppointment = () => {
           />
         </CardContent>
       </Card>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the appointment. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 };

@@ -6,3 +6,44 @@
 2025-04-15 14:35:51.491 CST [21490] LOG:  database system is ready to accept connections
 2025-04-15 20:39:10.429 CST [38242] ERROR:  permission denied for table clients
 2025-04-15 20:39:10.429 CST [38242] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" limit $1
+2025-04-25 13:49:51.815 CST [97251] FATAL:  database "dog_groom_tracker" does not exist
+2025-04-25 13:50:15.558 CST [97441] ERROR:  syntax error at or near "RENAME" at character 83
+2025-04-25 13:50:15.558 CST [97441] STATEMENT:  ALTER TABLE clients
+	ALTER COLUMN frequency TYPE integer USING frequency::integer,
+	RENAME COLUMN frequency TO frequency_days;
+2025-04-25 13:51:12.587 CST [97759] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:12.587 CST [97759] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:12.588 CST [97760] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:12.588 CST [97760] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:12.596 CST [97761] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:12.596 CST [97761] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:21.497 CST [97771] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:21.497 CST [97771] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:21.497 CST [97772] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:21.497 CST [97772] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:21.497 CST [97773] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:21.497 CST [97773] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:27.191 CST [97777] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:27.191 CST [97777] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:27.193 CST [97778] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:27.193 CST [97778] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:27.202 CST [97779] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:27.202 CST [97779] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:29.340 CST [97783] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:29.340 CST [97783] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:29.341 CST [97785] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:29.341 CST [97785] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:29.341 CST [97784] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:29.341 CST [97784] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:29.350 CST [97786] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:29.350 CST [97786] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" where "clients"."id" = $1
+2025-04-25 13:51:29.361 CST [97788] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:29.361 CST [97788] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" where "clients"."id" = $1
+2025-04-25 13:51:29.362 CST [97787] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:29.362 CST [97787] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" where "clients"."id" = $1
+2025-04-25 13:51:30.306 CST [97791] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:30.306 CST [97791] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:31.089 CST [97790] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:31.089 CST [97790] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc
+2025-04-25 13:51:33.672 CST [97789] ERROR:  column "frequency" does not exist at character 42
+2025-04-25 13:51:33.672 CST [97789] STATEMENT:  select "id", "name", "phone", "address", "frequency", "notes" from "clients" order by "clients"."id" asc

@@ -15,6 +15,7 @@ export interface IStorage {
   searchClients(term: string): Promise<ClientWithDogs[]>;
   createClient(client: InsertClient, dogsInfo: InsertDog[]): Promise<ClientWithDogs>;
   updateClient(id: number, client: Partial<InsertClient>): Promise<ClientWithDogs | undefined>;
+  deleteClient(id: number): Promise<boolean>;
   
   // Dog operations
   getDogsByClientId(clientId: number): Promise<Dog[]>;
@@ -26,7 +27,7 @@ export interface IStorage {
   getAppointments(): Promise<AppointmentWithClientAndDogs[]>;
   getAppointment(id: number): Promise<AppointmentWithClientAndDogs | undefined>;
   getAppointmentsByClientId(clientId: number): Promise<AppointmentWithClientAndDogs[]>;
-  getAppointmentsByDateRange(startDate: Date, endDate: Date): Promise<AppointmentWithClientAndDogs[]>;
+  getAppointmentsByDateRange(startDate: Date, endDate: Date, clientId?: number): Promise<AppointmentWithClientAndDogs[]>;
   createAppointment(appointment: InsertAppointment): Promise<AppointmentWithClientAndDogs>;
   updateAppointment(id: number, appointment: Partial<InsertAppointment>): Promise<AppointmentWithClientAndDogs | undefined>;
   deleteAppointment(id: number): Promise<boolean>;
@@ -108,7 +109,10 @@ export class DatabaseStorage implements IStorage {
 
   // Client operations
   async getClients(): Promise<ClientWithDogs[]> {
-    const clientsList = await db.select().from(clients);
+    const clientsList = await db.select()
+      .from(clients)
+      .orderBy(asc(clients.id));
+      
     const enrichedClients = await Promise.all(
       clientsList.map(client => this.enrichClientWithDogsAndAppointments(client))
     );
@@ -124,11 +128,20 @@ export class DatabaseStorage implements IStorage {
 
   async searchClients(term: string): Promise<ClientWithDogs[]> {
     const searchTerm = `%${term}%`;
-    const matchingClients = await db.select()
+    const matchingClients = await db.select({
+      id: clients.id,
+      name: clients.name,
+      phone: clients.phone,
+      address: clients.address,
+      frequency: clients.frequency,
+      notes: clients.notes
+    })
       .from(clients)
+      .leftJoin(dogs, eq(dogs.clientId, clients.id))
       .where(
-        sql`${clients.name} ILIKE ${searchTerm} OR ${clients.phone} ILIKE ${searchTerm}`
-      );
+        sql`${clients.name} ILIKE ${searchTerm} OR ${clients.phone} ILIKE ${searchTerm} OR ${dogs.name} ILIKE ${searchTerm}`
+      )
+      .groupBy(clients.id);
     
     const enrichedClients = await Promise.all(
       matchingClients.map(client => this.enrichClientWithDogsAndAppointments(client))
@@ -173,6 +186,21 @@ export class DatabaseStorage implements IStorage {
     if (!updatedClient) return undefined;
     
     return this.enrichClientWithDogsAndAppointments(updatedClient);
+  }
+
+  async deleteClient(id: number): Promise<boolean> {
+    // First delete all dogs associated with this client
+    await db.delete(dogs).where(eq(dogs.clientId, id));
+    
+    // Then delete all appointments associated with this client
+    await db.delete(appointments).where(eq(appointments.clientId, id));
+    
+    // Finally delete the client
+    const [deletedClient] = await db.delete(clients)
+      .where(eq(clients.id, id))
+      .returning();
+    
+    return !!deletedClient;
   }
 
   // Dog operations
@@ -230,7 +258,7 @@ export class DatabaseStorage implements IStorage {
     return enrichedAppointments;
   }
 
-  async getAppointmentsByDateRange(startDate: Date, endDate: Date): Promise<AppointmentWithClientAndDogs[]> {
+  async getAppointmentsByDateRange(startDate: Date, endDate: Date, clientId?: number): Promise<AppointmentWithClientAndDogs[]> {
     // Convert dates to string format for PostgreSQL
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
@@ -238,7 +266,12 @@ export class DatabaseStorage implements IStorage {
     const appointmentsInRange = await db.select()
       .from(appointments)
       .where(
-        sql`${appointments.date} >= ${startDateStr} AND ${appointments.date} <= ${endDateStr}`
+        clientId 
+          ? and(
+              sql`${appointments.date} >= ${startDateStr} AND ${appointments.date} <= ${endDateStr}`,
+              eq(appointments.clientId, clientId)
+            )
+          : sql`${appointments.date} >= ${startDateStr} AND ${appointments.date} <= ${endDateStr}`
       );
     
     const enrichedAppointments = await Promise.all(
@@ -318,33 +351,62 @@ export class DatabaseStorage implements IStorage {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(now.getDate() - 30);
     
-    // Filter clients who haven't had an appointment in the last 30 days
-    // and have a specified frequency
+    // Filter clients who haven't had an appointment in their specified frequency period
+    // or haven't had an appointment in 30 days, and don't have any upcoming appointments
     return allClients.filter(client => {
-      if (!client.frequency || client.frequency === 'As Needed') return false;
+      // Skip clients with no frequency set
+      if (!client.frequency) return false;
       
+      // If client has no appointments at all, they're overdue
       if (!client.lastAppointment) return true;
       
+      // If client has an upcoming appointment, they're not overdue
+      if (client.nextAppointment) {
+        const nextAppointmentDate = new Date(client.nextAppointment.date);
+        if (nextAppointmentDate >= now) return false;
+      }
+      
       const lastAppointmentDate = new Date(client.lastAppointment.date);
-      return lastAppointmentDate < thirtyDaysAgo;
+      
+      // Check if it's been more than 30 days since last appointment
+      const isOverThirtyDays = lastAppointmentDate < thirtyDaysAgo;
+      
+      // Check if it's been longer than their frequency period
+      const daysSinceLastAppointment = Math.floor((now.getTime() - lastAppointmentDate.getTime()) / (1000 * 60 * 60 * 24));
+      const isOverFrequencyPeriod = client.frequency > 0 && daysSinceLastAppointment > client.frequency;
+      
+      // Client is overdue if either condition is met
+      return isOverThirtyDays || isOverFrequencyPeriod;
     });
   }
 
   async getSuggestedFollowUps(): Promise<ClientWithDogs[]> {
     const allClients = await this.getClients();
     const now = new Date();
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(now.getDate() - 60);
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(now.getDate() + 7);
     
-    // Filter clients who haven't had an appointment in the last 60 days
-    // and don't have any upcoming appointments
+    // Filter clients who will be due for an appointment within the next 7 days
+    // based on their frequency setting
     return allClients.filter(client => {
-      if (client.nextAppointment) return false;
+      // Skip clients with no frequency set
+      if (!client.frequency) return false;
       
-      if (!client.lastAppointment) return true;
+      // Skip clients with upcoming appointments
+      if (client.nextAppointment) {
+        const nextAppointmentDate = new Date(client.nextAppointment.date);
+        if (nextAppointmentDate <= sevenDaysFromNow) return false;
+      }
+      
+      // If client has no previous appointments, they're not due soon
+      if (!client.lastAppointment) return false;
       
       const lastAppointmentDate = new Date(client.lastAppointment.date);
-      return lastAppointmentDate < sixtyDaysAgo;
+      const daysSinceLastAppointment = Math.floor((now.getTime() - lastAppointmentDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysUntilDue = client.frequency - daysSinceLastAppointment;
+      
+      // Client will be due within the next 7 days
+      return daysUntilDue >= 0 && daysUntilDue <= 7;
     });
   }
 

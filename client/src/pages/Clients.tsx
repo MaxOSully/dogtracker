@@ -1,21 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import ClientsTable from "@/components/clients/ClientsTable";
 import ClientSearch from "@/components/clients/ClientSearch";
 import { ClientWithDogs } from "@/types";
+import debounce from "lodash/debounce";
 
 const Clients = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
   // Fetch all clients if not searching
-  const { data: allClients, isLoading: isLoadingAll, refetch: refetchClients } = useQuery<ClientWithDogs[]>({
+  const { data: allClients, isLoading: isLoadingAll } = useQuery<ClientWithDogs[]>({
     queryKey: ['/api/clients'],
     enabled: !isSearching,
-    refetchOnMount: true,
-    staleTime: 0, // Always consider data stale to ensure fresh data
   });
 
   // Fetch search results if searching
@@ -24,12 +23,17 @@ const Clients = () => {
     enabled: isSearching && searchTerm.length > 0,
   });
 
+  // Create a debounced search function
+  const debouncedSearch = useCallback(
+    debounce((term: string) => {
+      setSearchTerm(term);
+      setIsSearching(term.length > 0);
+    }, 300),
+    []
+  );
+
   const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    setIsSearching(term.length > 0);
-    if (!term) {
-      refetchClients(); // Force refetch when returning to all clients
-    }
+    debouncedSearch(term);
   };
 
   const clients = isSearching ? searchResults : allClients;

@@ -37,14 +37,18 @@ const ClientForm = ({
     name: "",
     phone: "",
     address: "",
-    frequency: "",
+    frequency: 0,
     notes: "",
   },
-  defaultDogs = [{ id: undefined, name: "", size: "Medium", hairLength: "Medium" }],
+  defaultDogs = [{ id: undefined, name: "", breed: "", size: "Medium", hairLength: "Medium" }],
   onSubmit,
   isSubmitting,
 }: ClientFormProps) => {
   const [dogs, setDogs] = useState<DogFormInput[]>(defaultDogs);
+  const [isCustomFrequency, setIsCustomFrequency] = useState(() => {
+    const presetValues = [0, 7, 14, 30, 60];
+    return defaultValues.frequency ? !presetValues.includes(defaultValues.frequency) : false;
+  });
 
   const form = useForm<InsertClient>({
     resolver: zodResolver(clientFormSchema),
@@ -65,7 +69,7 @@ const ClientForm = ({
   };
 
   const addDog = () => {
-    setDogs([...dogs, { name: "", size: "Medium", hairLength: "Medium" }]);
+    setDogs([...dogs, { name: "", breed: "", size: "Medium", hairLength: "Medium" }]);
   };
 
   const updateDog = (index: number, updatedDog: DogFormInput) => {
@@ -159,23 +163,54 @@ const ClientForm = ({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Appointment Frequency</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select frequency" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Weekly">Weekly</SelectItem>
-                  <SelectItem value="Bi-weekly">Bi-weekly</SelectItem>
-                  <SelectItem value="Monthly">Monthly</SelectItem>
-                  <SelectItem value="Every 2 Months">Every 2 Months</SelectItem>
-                  <SelectItem value="As Needed">As Needed</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  onValueChange={(value) => {
+                    if (value === "custom") {
+                      setIsCustomFrequency(true);
+                      // Keep the current value if it exists
+                      if (!field.value) {
+                        field.onChange(null);
+                      }
+                    } else {
+                      setIsCustomFrequency(false);
+                      field.onChange(parseInt(value));
+                    }
+                  }}
+                  value={isCustomFrequency ? "custom" : field.value?.toString() || "0"}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="7">Weekly (7 days)</SelectItem>
+                    <SelectItem value="14">Bi-weekly (14 days)</SelectItem>
+                    <SelectItem value="30">Monthly (30 days)</SelectItem>
+                    <SelectItem value="60">Every 2 Months (60 days)</SelectItem>
+                    <SelectItem value="custom">Custom Days</SelectItem>
+                    <SelectItem value="0">As Needed</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isCustomFrequency && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="1"
+                      max="365"
+                      placeholder="Days"
+                      className="w-24"
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const value = e.target.value ? parseInt(e.target.value) : null;
+                        field.onChange(value);
+                      }}
+                    />
+                    <span className="text-sm text-gray-500">days</span>
+                  </div>
+                )}
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -192,6 +227,7 @@ const ClientForm = ({
                   placeholder="Additional information..."
                   className="resize-none"
                   {...field}
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />

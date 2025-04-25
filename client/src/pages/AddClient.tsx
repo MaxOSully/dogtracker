@@ -18,6 +18,7 @@ const AddClient = () => {
       // Map the dog data to the format expected by the backend
       const dogs = dogsData.map(dog => ({
         name: dog.name,
+        breed: dog.breed,
         size: dog.size,
         hairLength: dog.hairLength
       }));

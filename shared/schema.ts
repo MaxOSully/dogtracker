@@ -8,7 +8,7 @@ export const clients = pgTable("clients", {
   name: text("name").notNull(),
   phone: text("phone").notNull(),
   address: text("address").notNull(),
-  frequency: text("frequency"),
+  frequency: integer("frequency_days"), // Number of days between appointments
   notes: text("notes"),
 });
 
@@ -17,6 +17,7 @@ export const dogs = pgTable("dogs", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id),
   name: text("name").notNull(),
+  breed: text("breed"),  // Optional breed field
   size: text("size").notNull(), // small, medium, large
   hairLength: text("hair_length").notNull(), // short, medium, long
 });
@@ -29,7 +30,7 @@ export const appointments = pgTable("appointments", {
   time: time("time").notNull(),
   serviceType: text("service_type").notNull(),
   price: numeric("price").notNull(),
-  status: text("status").notNull().default("pending"), // pending, confirmed, completed, cancelled
+  status: text("status").notNull().default("pending"), // pending, completed
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

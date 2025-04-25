@@ -10,46 +10,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 
 type AppointmentTableProps = {
   appointments: AppointmentWithClientAndDogs[];
 };
 
 const AppointmentTable = ({ appointments }: AppointmentTableProps) => {
-  const { toast } = useToast();
-
   // Sort appointments by date and time
   const sortedAppointments = [...appointments].sort((a, b) => {
     const dateA = new Date(`${a.date}T${a.time}`);
     const dateB = new Date(`${b.date}T${b.time}`);
     return dateA.getTime() - dateB.getTime();
   });
-
-  const handleCancelAppointment = async (id: number) => {
-    try {
-      await apiRequest('DELETE', `/api/appointments/${id}`);
-      
-      // Invalidate and refetch all appointment-related queries
-      queryClient.invalidateQueries({ 
-        queryKey: ['/api/appointments'],
-        refetchType: 'all',
-        exact: false 
-      });
-      
-      toast({
-        title: "Appointment cancelled",
-        description: "The appointment has been cancelled successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to cancel the appointment. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   if (sortedAppointments.length === 0) {
     return (
@@ -88,7 +60,7 @@ const AppointmentTable = ({ appointments }: AppointmentTableProps) => {
               <TableCell>
                 {appointment.dogs.map((dog) => (
                   <div key={dog.id}>
-                    {dog.name} ({dog.size}, {dog.hairLength} hair)
+                    {dog.name}{dog.breed ? ` (${dog.breed})` : ` (${dog.size}, ${dog.hairLength} hair)`}
                   </div>
                 ))}
               </TableCell>
@@ -99,18 +71,9 @@ const AppointmentTable = ({ appointments }: AppointmentTableProps) => {
                 ${Number(appointment.price).toFixed(2)}
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                <div className="flex gap-2">
-                  <Link href={`/appointments/edit/${appointment.id}`}>
-                    <Button variant="outline" size="sm">Edit</Button>
-                  </Link>
-                  <Button 
-                    variant="destructive" 
-                    size="sm"
-                    onClick={() => handleCancelAppointment(appointment.id)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                <Link href={`/appointments/edit/${appointment.id}`}>
+                  <Button variant="outline" size="sm">Edit</Button>
+                </Link>
               </TableCell>
             </TableRow>
           ))}

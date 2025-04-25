@@ -53,6 +53,7 @@ export type DailyFinancials = {
 export type DogFormInput = {
   id?: number;
   name: string;
+  breed?: string;
   size: string;
   hairLength: string;
 };

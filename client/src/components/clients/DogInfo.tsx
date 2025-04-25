@@ -48,6 +48,16 @@ const DogInfo = ({ dog, onChange, onDelete, canDelete }: DogInfoProps) => {
           </div>
           
           <div>
+            <Label htmlFor={`dog-breed-${dog.id || 'new'}`}>Breed</Label>
+            <Input
+              id={`dog-breed-${dog.id || 'new'}`}
+              placeholder="Dog's Breed"
+              value={dog.breed || ""}
+              onChange={(e) => handleChange("breed", e.target.value)}
+            />
+          </div>
+          
+          <div>
             <Label htmlFor={`dog-size-${dog.id || 'new'}`}>Size</Label>
             <Select
               value={dog.size}

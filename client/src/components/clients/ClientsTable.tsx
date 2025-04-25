@@ -84,8 +84,10 @@ const ClientsTable = ({ clients, isLoading, isSearchResults }: ClientsTableProps
                 <TableCell className="whitespace-nowrap">
                   C{String(client.id).padStart(5, '0')}
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  {client.name}
+                <TableCell>
+                  <Link href={`/clients/${client.id}`} className="text-blue-600 hover:underline">
+                    {client.name}
+                  </Link>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {client.phone}
@@ -93,7 +95,7 @@ const ClientsTable = ({ clients, isLoading, isSearchResults }: ClientsTableProps
                 <TableCell>
                   {client.dogs.map((dog) => (
                     <div key={dog.id}>
-                      {dog.name} ({dog.size}, {dog.hairLength} hair)
+                      {dog.name}{dog.breed ? ` (${dog.breed})` : ` (${dog.size}, ${dog.hairLength} hair)`}
                     </div>
                   ))}
                 </TableCell>
@@ -135,7 +137,10 @@ const ClientsTable = ({ clients, isLoading, isSearchResults }: ClientsTableProps
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious onClick={prevPage} disabled={currentPage === 1} />
+                  <PaginationPrevious
+                    onClick={currentPage === 1 ? undefined : prevPage}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  />
                 </PaginationItem>
                 {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
                   const pageToShow = totalPages <= 5
@@ -158,7 +163,10 @@ const ClientsTable = ({ clients, isLoading, isSearchResults }: ClientsTableProps
                   );
                 })}
                 <PaginationItem>
-                  <PaginationNext onClick={nextPage} disabled={currentPage === totalPages} />
+                  <PaginationNext
+                    onClick={currentPage === totalPages ? undefined : nextPage}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
                 </PaginationItem>
               </PaginationContent>
             </Pagination>

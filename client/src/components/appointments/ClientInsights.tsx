@@ -55,15 +55,15 @@ const ClientInsights = ({
         </CardContent>
       </Card>
 
-      {/* Suggested Clients to Call */}
+      {/* Due Soon */}
       <Card>
         <CardContent className="pt-4">
           <h3 className="text-lg font-medium text-gray-800 mb-3">
-            Suggested Follow-ups
+            Due for Appointment Soon
           </h3>
           {suggestedFollowUps.length === 0 ? (
             <p className="text-center py-4 text-gray-500">
-              No clients currently need follow-up calls.
+              No clients are due for an appointment in the next 7 days.
             </p>
           ) : (
             <ul className="divide-y divide-gray-200">
@@ -82,17 +82,15 @@ const ClientInsights = ({
                           )
                         : "None"}
                     </p>
+                    <p className="text-xs text-gray-500">
+                      Frequency: Every {client.frequency} days
+                    </p>
                   </div>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="text-primary"
-                    onClick={() => {
-                      window.open(`tel:${client.phone}`);
-                    }}
-                  >
-                    Call
-                  </Button>
+                  <Link href={`/appointments/add?clientId=${client.id}`}>
+                    <Button variant="link" size="sm" className="text-primary">
+                      Schedule
+                    </Button>
+                  </Link>
                 </li>
               ))}
             </ul>

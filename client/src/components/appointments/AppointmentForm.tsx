@@ -115,23 +115,23 @@ const AppointmentForm = ({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Client</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value}
-              >
-                <FormControl>
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select client" />
+                    <SelectValue placeholder="Select a client" />
                   </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id.toString()}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id.toString()}>
+                        {client.name} - {client.dogs.map(dog => dog.name).join(", ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -154,8 +154,12 @@ const AppointmentForm = ({
               <h4 className="text-sm font-medium mt-4 mb-2">Dogs:</h4>
               <ul className="text-sm">
                 {selectedClient.dogs.map((dog) => (
-                  <li key={dog.id}>
-                    {dog.name} ({dog.size}, {dog.hairLength} hair)
+                  <li key={dog.id} className="mb-1">
+                    <span className="font-medium">{dog.name}</span>
+                    {dog.breed ? ` (${dog.breed})` : ''} 
+                    <span className="text-gray-500 text-xs ml-2">
+                      Size: {dog.size}, Hair: {dog.hairLength}
+                    </span>
                   </li>
                 ))}
               </ul>

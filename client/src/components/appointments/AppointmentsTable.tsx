@@ -199,7 +199,7 @@ const AppointmentsTable = ({
                 <TableCell>
                   {appointment.dogs.map((dog) => (
                     <div key={dog.id}>
-                      {dog.name} ({dog.size}, {dog.hairLength} hair)
+                      {dog.name}{dog.breed ? ` (${dog.breed})` : ` (${dog.size}, ${dog.hairLength} hair)`}
                     </div>
                   ))}
                 </TableCell>
@@ -247,8 +247,8 @@ const AppointmentsTable = ({
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
-                    onClick={prevPage}
-                    disabled={currentPage === 1}
+                    onClick={currentPage === 1 ? undefined : prevPage}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                   />
                 </PaginationItem>
                 {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
@@ -274,8 +274,8 @@ const AppointmentsTable = ({
                 })}
                 <PaginationItem>
                   <PaginationNext
-                    onClick={nextPage}
-                    disabled={currentPage === totalPages}
+                    onClick={currentPage === totalPages ? undefined : nextPage}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
                   />
                 </PaginationItem>
               </PaginationContent>

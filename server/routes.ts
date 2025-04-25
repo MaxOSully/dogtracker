@@ -93,6 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const dogsSchema = z.array(z.object({
           id: z.number().optional(),
           name: z.string(),
+          breed: z.string().optional(),
           size: z.string(),
           hairLength: z.string()
         }));
@@ -105,6 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Update existing dog
             await storage.updateDog(dogData.id, {
               name: dogData.name,
+              breed: dogData.breed,
               size: dogData.size,
               hairLength: dogData.hairLength
             });
@@ -114,6 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.createDog({
               clientId: id,
               name: dogData.name,
+              breed: dogData.breed,
               size: dogData.size,
               hairLength: dogData.hairLength
             });
@@ -140,6 +143,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to update client", error });
+    }
+  });
+
+  app.delete("/api/clients/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid client ID" });
+      }
+
+      const deleted = await storage.deleteClient(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete client", error });
     }
   });
 
@@ -213,14 +234,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/appointments/dateRange", async (req: Request, res: Response) => {
     try {
-      const { startDate, endDate } = req.query;
+      const { startDate, endDate, clientId } = req.query;
       if (!startDate || !endDate || typeof startDate !== "string" || typeof endDate !== "string") {
         return res.status(400).json({ message: "Start date and end date are required" });
       }
 
       const appointments = await storage.getAppointmentsByDateRange(
         new Date(startDate),
-        new Date(endDate)
+        new Date(endDate),
+        clientId ? parseInt(clientId as string) : undefined
       );
 
       res.json(appointments);
